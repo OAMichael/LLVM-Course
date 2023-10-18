@@ -1,1 +1,5 @@
 SDL/build
+**/*.o
+**/*.txt
+**/*.dat
+**/*.so
