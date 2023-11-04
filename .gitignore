@@ -1,5 +1,7 @@
 SDL/build
+.vscode
 **/*.o
 **/*.txt
 **/*.dat
 **/*.so
+**/*.out
