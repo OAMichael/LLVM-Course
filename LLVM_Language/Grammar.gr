@@ -1,0 +1,163 @@
+# ==================================== Terminals ====================================
+
+IntLiteral                  [-]?[1-9]+[0-9]*|[0]
+
+Identifier                  [A-Za-z_]+[A-Za-z_0-9]*
+
+Mul                         [*]
+Div                         [/]
+Rem                         [%]
+Add                         [+]
+Sub                         [-]
+ShiftLeft                   [<][<]
+ShiftRight                  [>][>]
+
+Less                        [<]
+LessOrEq                    [<][=]
+Greater                     [>]
+GreaterOrEq                 [>][=]
+Equal                       [=][=]
+NotEqual                    [!][=]
+Assignment                  [=]
+
+LogicAnd                    [&][&]
+LogicOr                     [|][|]
+BitwiseAnd                  [&]
+BitwiseOr                   [|]
+
+LeftParent                  "("
+RightParent                 ")"
+LeftBracket                 "["
+RightBracket                "]"
+LeftBrace                   "{"
+RightBrace                  "}"
+Semicolon                   [;]
+Comma                       [,]
+Comment                     [/][/].*\n
+Whitespace                  [ \t\r\n]
+
+IntType                     [i][n][t]
+VoidType                    [v][o][i][d]
+
+IfKeyword                   [i][f]
+ElseKeyword                 [e][l][s][e]
+ForKeyword                  [f][o][r]
+WhileKeyword                [w][h][i][l][e]
+FunctionKeyword             [f][u][n][c][t][i][o][n]
+ReturnKeyword               [r][e][t][u][r][n]
+
+
+# ================================== Non-terminals ==================================
+
+Program:                        FunctionDeclaration
+                                | IntVariableDeclaration
+                                | Program FunctionDeclaration
+                                | Program IntVariableDeclaration
+                                | epsilon
+
+
+SimpleIntDeclaration:           IntType Identifier
+InitIntDeclaration:             IntType Identifier Assignment Expression
+ArrayIntDeclaration:            IntType Identifier LeftBracket IntLiteral RightBracket
+
+IntVariableDeclaration:         InitIntDeclaration
+                                | ArrayIntDeclaration
+                                | SimpleIntDeclaration
+
+IntValue:                       Identifier LeftBracket Expression RightBracket
+                                | Identifier
+
+
+BeginScope:                     LeftBrace
+EndScope:                       RightBrace
+StatementsScope:                BeginScope StatementList EndScope
+
+
+IfHeader:                       IfKeyword LeftParent Expression RightParent
+ElseHeader:                     ElseKeyword
+IfStatement:                    IfHeader StatementsScope ElseHeader StatementsScope
+                                | IfHeader StatementsScope
+
+
+ForLoopPreHeader:               ForKeyword LeftParent Statement
+ForLoopHeader:                  Expression
+ForLoopPostHeader:              Statement RightParent
+ForLoopStatement:               ForLoopPreHeader Semicolon ForLoopHeader Semicolon ForLoopPostHeader StatementsScope
+
+
+WhileLoopPreHeader:             WhileKeyword LeftParent
+WhileLoopPostHeader:            Expression RightParent
+WhileLoopStatement:             WhileLoopPreHeader WhileLoopPostHeader StatementsScope
+
+ReturnType:                     IntType
+                                | VoidType
+
+IntArgumentDeclaration:         IntType Identifier
+                                | IntType Identifier LeftBracket IntLiteral RightBracket
+
+FunctionArgsDeclarations:       FunctionArgsDeclarations Comma IntArgumentDeclaration
+                                | IntArgumentDeclaration
+                                | epsilon
+
+FunctionArgsExpressions:        FunctionArgsExpressions Comma Expression
+                                | Expression
+                                | epsilon
+
+FunctionHeader:                 ReturnType FunctionKeyword Identifier LeftParent FunctionArgsDeclarations RightParent
+FunctionDeclaration:            FunctionHeader StatementsScope
+FunctionCall:                   Identifier LeftParent FunctionArgsExpressions RightParent
+
+
+AssigmentStatement:             IntValue Assignment Expression
+ReturnStatement:                ReturnKeyword Expression
+                                | ReturnKeyword
+
+
+Statement:                      IntVariableDeclaration
+                                | AssigmentStatement
+                                | IfStatement
+                                | WhileLoopStatement
+                                | ForLoopStatement
+                                | FunctionCall
+                                | ReturnStatement
+
+StatementList:                  StatementList Statement
+                                | epsilon
+
+
+Primary:                        IntLiteral
+                                | IntValue
+                                | FunctionCall
+
+Factor:                         Primary
+                                | Sub Primary
+                                | LeftParent Expression RightParent
+
+HighPriorityOperation:          Mul
+                                | Div
+                                | Rem
+
+LowPriorityOperation:           Add
+                                | Sub
+                                | ShiftLeft
+                                | ShiftRight
+                                | BitwiseAnd
+                                | BitwiseOr
+
+ExpressionOperation:            Less
+                                | LessOrEq
+                                | Greater
+                                | GreaterOrEq
+                                | Equal
+                                | NotEqual
+                                | LogicAnd
+                                | LogicOr
+
+Summand:                        Factor
+                                | Summand HighPriorityOperation Factor
+
+Simple:                         Summand
+                                | Simple LowPriorityOperation Summand
+
+Expression:                     Simple
+                                | Expression ExpressionOperation Simple
