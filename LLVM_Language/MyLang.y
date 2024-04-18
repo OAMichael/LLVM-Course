@@ -156,6 +156,8 @@ std::map<std::string, ArrayValue> globalArrayMap;
 
 int main(int argc, char **argv)
 {
+    bool runSimulation = false;
+
     InitializeNativeTarget();
     InitializeNativeTargetAsmPrinter();
 
@@ -171,32 +173,37 @@ int main(int argc, char **argv)
                                                 Type::getInt32Ty(context)};
 
     FunctionType *simPutPixelType = FunctionType::get(voidType, simPutPixelParamTypes, false);
-    simPutPixelFunc = module->getOrInsertFunction("simPutPixel", simPutPixelType);
+    simPutPixelFunc = module->getOrInsertFunction("llvm.riscx.putpixel", simPutPixelType);
 
     // declare void @simFlush(...)
-    FunctionType *simFlushType = FunctionType::get(voidType, {voidType}, false);
-    simFlushFunc = module->getOrInsertFunction("simFlush", simFlushType);
+    FunctionType *simFlushType = FunctionType::get(voidType, {}, false);
+    simFlushFunc = module->getOrInsertFunction("llvm.riscx.flush", simFlushType);
 
     // declare i32 @simRand(...)
-    FunctionType *simRandType = FunctionType::get(Type::getInt32Ty(context), {voidType}, false);
-    simRandFunc = module->getOrInsertFunction("simRand", simRandType);
+    FunctionType *simRandType = FunctionType::get(Type::getInt32Ty(context), {}, false);
+    simRandFunc = module->getOrInsertFunction("llvm.riscx.rand", simRandType);
 
     yyparse();
 
-    outs() << "\n#[LLVM IR]:\n";
+    // outs() << "\n#[LLVM IR]:\n";
     module->print(outs(), nullptr);
+
+
+    if (!runSimulation) {
+        return 0;
+    }
 
     // Interpreter of LLVM IR
     outs() << "Running code...\n";
 	ExecutionEngine *ee = EngineBuilder(std::unique_ptr<Module>(module)).create();
     ee->InstallLazyFunctionCreator([&](const std::string &fnName) -> void * {
-        if (fnName == "simFlush") {
-            return reinterpret_cast<void *>(simFlush);
-        }
-        if (fnName == "simPutPixel") {
+        if (fnName == "llvm.riscx.putpixel") {
             return reinterpret_cast<void *>(simPutPixel);
         }
-        if (fnName == "simRand") {
+        if (fnName == "llvm.riscx.flush") {
+            return reinterpret_cast<void *>(simFlush);
+        }
+        if (fnName == "llvm.riscx.rand") {
             return reinterpret_cast<void *>(simRand);
         }
         return nullptr;
